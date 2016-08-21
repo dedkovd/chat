@@ -1,0 +1,43 @@
+<html>
+<head>
+<script>
+	var chat;
+	function connect(token) {
+		chat = new WebSocket("ws://localhost:8888/chat?token="+token);
+		chat.onerror = function(error) {
+			alert(error);
+		}
+		chat.onopen = function() {
+			alert('Connected');
+		}
+		chat.onclose = function(event) {
+			if (event.wasClean) {
+				alert('Clean disconnected');
+			} else {
+				alert('Disconnected');
+			}
+		}
+		chat.onmessage = function(message) {
+			alert(message.data);
+		}
+	}
+
+	function disconnect() {
+		chat.close()
+	}
+
+	function sendBroadcast() {
+		chat.send('{"to": -1, "text": "Test broadcast"}');
+	}
+</script>
+</head>
+<body>
+<h1>Hello world!</h1>
+<input type="button" onclick="connect('0f1927ee-67b3-11e6-a3fc-100ba94e4920')" value="Connect user 1"/>
+<input type="button" onclick="connect('1d40a964-67b3-11e6-a3fc-100ba94e4920')" value="Connect user 2"/>
+<input type="button" onclick="connect('273684b6-67b3-11e6-a3fc-100ba94e4920')" value="Connect user 3"/>
+<input type="button" onclick="connect('40fdef38-67b3-11e6-a3fc-100ba94e4920')" value="Connect user 4"/>
+<input type="button" onclick="disconnect()" value="Disconnect"/>
+<input type="button" onclick="sendBroadcast()" value="Send Broadcast"/>
+</body>
+</html>
