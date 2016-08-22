@@ -2,6 +2,7 @@ import tornado, tornado.web, tornado.escape, tornado.websocket
 import redis
 import hashlib
 import uuid
+from dal import DAL
 
 def wsauth(handler_class):
     def wrap_open(handler_open, **kwargs):
@@ -41,13 +42,13 @@ def wsauth(handler_class):
 class ChatHandler(tornado.websocket.WebSocketHandler):
     def open(self):
         self.application.openedSockets[self.user_id] = self
+        self.send_broadcast('connStatus')
 
     def save_message(self, message):
-        message['from'] = self.user_id
         srv.lpush('messages', message)
 
     def send_message_to_user(self, user_id, message):
-        socket = self.application.openedSockets[user_id]
+        socket = self.application.openedSockets[str(user_id)]
         if socket:
             socket.write_message(message)
 
@@ -59,13 +60,15 @@ class ChatHandler(tornado.websocket.WebSocketHandler):
 
     def on_message(self, message):
         message = eval(message)
+        message['from'] = DAL().getUser(self.user_id)
         self.save_message(message)
         if message['to'] == -1:
-            self.send_broadcast(message['text'])
+           self.send_broadcast(message)
         else:
-            self.send_message_to_user(message['to'], message['text'])
+            self.send_message_to_user(message['to'], message)
 
     def on_close(self, message=None):
+        self.send_broadcast('connStatus')
         del self.application.openedSockets[self.user_id]
 
 class ActiveUsersHandler(tornado.web.RequestHandler):
@@ -74,8 +77,11 @@ class ActiveUsersHandler(tornado.web.RequestHandler):
         if active_users_id:
             active_users = srv.hmget('users', active_users_id)
             users_list = []
-            for user in active_users:
-                users_list.append(eval(user))
+            for user_id, user in zip(active_users_id, active_users):
+                u = eval(user)
+                del u['password']
+                u['user_id'] = user_id
+                users_list.append(u)
             self.write(tornado.escape.json_encode(users_list))
         else:
             self.write('[]')
