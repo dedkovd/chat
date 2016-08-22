@@ -12,6 +12,15 @@ chatApp.controller('ChatController', function ChatController($scope, $http) {
 	};
 	$scope.loadUsers();
 
+	$scope.getUserLogin = function(user_id) {
+		for (var i = 0; i < $scope.users.length; i++) {
+			if ($scope.users[i].user_id == user_id) {
+				return $scope.users[i].login;
+			};
+		};
+		return "All users";
+	};
+
 	$scope.loginToChat = function(login) {
 		data = {'login': $scope.userLogin, 'password': $scope.userPassword};
 		$http.post("/auth",data).then(function(response) {
@@ -53,7 +62,11 @@ chatApp.controller('ChatController', function ChatController($scope, $http) {
 
 		$scope.chat.send('{"to": '+$scope.recipient+
 			', "text": "'+$scope.messageText+'"}');
-		msg = {from: {login: "Me"}, to: $scope.recipient, text: $scope.messageText}
+		msg = {
+			from: {login: "Me"}, 
+			to: {login: $scope.getUserLogin($scope.recipient)},
+			text: $scope.messageText
+		}
 		$scope.messages.push(msg);
 	}
 });
