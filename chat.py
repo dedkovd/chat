@@ -37,14 +37,14 @@ def wsauth(handler_class):
     handler_class.open = wrap_open(handler_class.open)
     return handler_class
 
-class TestHandler(tornado.web.RequestHandler):
-    def get(self):
-        self.write(str(len(self.application.openedSockets)))
-
 @wsauth
 class ChatHandler(tornado.websocket.WebSocketHandler):
     def open(self):
         self.application.openedSockets[self.user_id] = self
+
+    def save_message(self, message):
+        message['from'] = self.user_id
+        srv.lpush('messages', message)
 
     def send_message_to_user(self, user_id, message):
         socket = self.application.openedSockets[user_id]
@@ -59,6 +59,7 @@ class ChatHandler(tornado.websocket.WebSocketHandler):
 
     def on_message(self, message):
         message = eval(message)
+        self.save_message(message)
         if message['to'] == -1:
             self.send_broadcast(message['text'])
         else:
@@ -151,7 +152,6 @@ app = tornado.web.Application([
     (r"/auth", AuthHandler),
     (r"/active", ActiveUsersHandler),
     (r"/chat", ChatHandler),
-    (r"/test", TestHandler),
     (r"/static/(.*)", tornado.web.StaticFileHandler, {'path': 'static/'}),
     ])
 app.openedSockets = {}
