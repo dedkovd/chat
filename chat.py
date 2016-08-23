@@ -118,7 +118,7 @@ app = tornado.web.Application([
     (r"/auth", AuthHandler),
     (r"/active", ActiveUsersHandler),
     (r"/chat", ChatHandler),
-    (r"/static/(.*)", tornado.web.StaticFileHandler, {'path': 'static/'}),
+    (r"/static/(.*)", tornado.web.StaticFileHandler, {'path': '/opt/static/'}),
     ])
 app.openedSockets = {}
 
